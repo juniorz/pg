@@ -1,0 +1,27 @@
+gen.m: 
+   - executa o método gerando tabelas com os resultados em todos os benchmarks.
+   - contém quais métodos devem ser usados (list_methods).
+   - deve-se escolher o bechmark, a dimensão (D), número de execuções (trials) e o nível máximo de ruído (max_noise).
+   - usage: gen('rastrigin_bbpso.csv','rastrigin',{'bbpso'}).
+
+table.m:
+   - não é necessário utilizá-lo diretamente.
+
+stats.m:
+   - não é necessário utilizá-lo diretamente.
+   - calcula as estatísticas desejadas (nesse caso, média, desvio padrão e taxa de sucesso dos jumps).
+
+chaoticpso.m:
+   - implementação dos métodos propriamente (pso, lbest, fips, bbpso), com e sem jump, com e sem ruído.
+   - contém um setup default dos parâmetros (iterações, população, dimensão,  eta, espaço de busca, intervalo de inicialização).
+   - usage: chaoticpso('rastrigin',30,0.0,'pso','no',-1,1).
+             função: rastrigin.
+             dimensão: 30.
+             nível de ruído: 0.0 (sem ruído).
+             método: pso
+             versão original: não utilizar jumps.
+             eta default (tamanho dos saltos).
+             display process.
+
+eta_analysis.m:
+   - script usado para gerar os gráficos da figura 3 no artigo da Information Science.
