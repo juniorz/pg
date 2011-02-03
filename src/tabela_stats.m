@@ -1,14 +1,15 @@
-function table(fid, bench, D, max_noise, trials, list_methods)
+% Gera uma tabela
+function tabela_stats(fid, bench, D, max_noise, trials)
+
+  % Coloquei fixo
+  list_methods = { 'HS' }
 
    eta_p = -1; % default eta percentage (see chaoticpso.m)
    noise = max_noise;
 
-   if (nargin < 6) | (~length(list_methods))
-      list_methods = {'pso' 'lbest' 'fips' 'bbpso'};
-   end
-
    fprintf(fid,'%s',bench);
 
+  %tabela SEM o jump
    for met=1:length(list_methods)
       method = char(list_methods(met));
 
@@ -16,7 +17,7 @@ function table(fid, bench, D, max_noise, trials, list_methods)
       fprintf(fid,name);
 
       for noise=0:0.2:max_noise
-         [media,desvio,success] = stats(bench,D,noise,method,'no',eta_p,trials);
+         [media,desvio,success] = calcula_stats(bench, D, noise, method, 'no', eta_p, trials);
 
          fprintf(fid,';%g (%g)',media,desvio);
       end
@@ -24,6 +25,7 @@ function table(fid, bench, D, max_noise, trials, list_methods)
       fprintf(fid,'\n');
    end
 
+  % tabela COM o jump
    for met=1:length(list_methods)
       method = char(list_methods(met));
 
@@ -32,7 +34,7 @@ function table(fid, bench, D, max_noise, trials, list_methods)
       fprintf(fid,name);
 
       for noise=0:0.2:max_noise
-         [media,desvio,success] = stats(bench,D,noise,method,'yes',eta_p,trials);
+         [media,desvio,success] = calcula_stats(bench, D, noise, method, 'yes', eta_p, trials);
 
          fprintf(fid,';%g (%g)',media,desvio);
       end  

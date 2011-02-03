@@ -89,7 +89,7 @@ function [out, rate] = hs_jump(functname, Dim, noise, flag_jump, eta_percentage,
     global HM NCHV fitness_m PVB BW gx;
     global BestIndex WorstIndex BestFit WorstFit BestGen currentIteration;
 
-    MaxItr=5000;     % maximum number of iterations
+    MaxItr=1500;     % maximum number of iterations
 %    NVAR=D;         %number of variables
 %    NG=6;           %number of ineguality constraints
 %    NH=0;           %number of eguality constraints
@@ -100,9 +100,7 @@ function [out, rate] = hs_jump(functname, Dim, noise, flag_jump, eta_percentage,
     bwmin=0.0001;    % minumum bandwidth
     bwmax=1.0;       % maxiumum bandwidth
 
-    % O que seria isso? Uma sequencia caótica?
-    % Teria que 
-    PVB=[1.0 4;0.6 2;40 80;20 60];   % range of variables
+%    PVB=[1.0 4;0.6 2;40 80;20 60];   % range of variables
 
     % /**** Initiate Matrix ****/
     HM=zeros(HMS,Dim);
@@ -116,15 +114,35 @@ function [out, rate] = hs_jump(functname, Dim, noise, flag_jump, eta_percentage,
 
     %MainHarmony
     %initialize
-    % randomly initialize the HM
-    for i=1:HMS
-        for j=1:Dim
-            HM(i,j)=randval(PVB(j,1),PVB(j,2));
-        end
-        %fitness(i) = Fitness(HM(i,:));
-        fitness_m(i) = fitness(functname, HM(i,1:Dim), noise);
+
+
+   %------------------------------------------------------------------------------------------------------------------- 
+   % initialize population of particles and their velocities at time zero
+   %pos = zeros(ps,D);
+   HM = zeros(HMS, Dim);
+
+    % randomly initialize the HM   
+    for d=1:Dim
+      HM(1:HMS,d) = unifrnd(VRmin(d)*ones(HMS,1), VRmax(d)*ones(HMS,1));
+      %vel(1:ps,d) = unifrnd(-mv*ones(ps,1), mv*ones(ps,1)); % no need
     end
-    %END - initialize
+
+    for i=1:HMS
+      %fitness(i) = Fitness(HM(i,:));
+      fitness_m(i) = fitness(functname, HM(i,1:Dim), noise);
+    end
+
+%    for i=1:HMS
+%        for j=1:Dim
+%            HM(i,j)=randval(PVB(j,1),PVB(j,2));
+%        end
+%        %fitness(i) = Fitness(HM(i,:));
+%        fitness_m(i) = fitness(functname, HM(i,1:Dim), noise);
+%    end
+%    %END - initialize
+
+
+
     currentIteration  = 0;
 
     while(StopCondition(currentIteration))
@@ -134,11 +152,12 @@ function [out, rate] = hs_jump(functname, Dim, noise, flag_jump, eta_percentage,
         for pp =1:Dim
             BW(pp)=bwmax*exp(coef*currentIteration);
         end
+        
         % improvise a new harmony vector
         for i =1:Dim
             ran = rand(1);
             if( ran < HMCR ) % memory consideration
-                index = randint(1,HMS);
+                index = randint(1, HMS);
                 NCHV(i) = HM(index,i);
                 pvbRan = rand(1);
                 if( pvbRan < PAR) % pitch adjusting
@@ -157,14 +176,15 @@ function [out, rate] = hs_jump(functname, Dim, noise, flag_jump, eta_percentage,
                     end
                 end
             else
-                NCHV(i) = randval( PVB(i,1), PVB(i,2) ); % random selection
+%               NCHV(i) = randval( PVB(i,1), PVB(i,2) ); % random selection
+                NCHV(i) = randval( VRmin(i,1), VRmax(i,1) ); % random selection
             end
         end
         %newFitness = Fitness(NCHV);
         newFitness = fitness(functname, NCHV, noise);
         UpdateHM( newFitness );
 
-        currentIteration=currentIteration+1;
+        currentIteration = currentIteration+1;
     end
     BestFitness = min(fitness_m);
    %END - MainHarmony
@@ -173,11 +193,6 @@ function [out, rate] = hs_jump(functname, Dim, noise, flag_jump, eta_percentage,
 
    % function output
    out = BestFitness;
-   
-   % salvar o contador de jump apenas quando estiver em modo verbose.
-   if display_process > 0
-%      save_sucess(success_counter, functname, flag_method);
-   end
 
    % taxa de sucesso com jump.
    %rate = success_counter(end,1)*100/success_counter(end,2);
@@ -186,9 +201,6 @@ function [out, rate] = hs_jump(functname, Dim, noise, flag_jump, eta_percentage,
 % /*********************************************/
 
     function UpdateHM( NewFit )
-        % global Dim MaxItr HMS ;
-        % global HM NCHV BestGen fitness ;
-        % global BestIndex WorstIndex BestFit WorstFit currentIteration;
         
         if(currentIteration==0)
             BestFit=fitness_m(1);
@@ -207,6 +219,7 @@ function [out, rate] = hs_jump(functname, Dim, noise, flag_jump, eta_percentage,
                 end
             end
         end
+        
         if (NewFit< WorstFit)
             
             if( NewFit < BestFit )
@@ -258,18 +271,3 @@ function f = fitness(functname, pos, noise)
    f = f + noise*randn;
 end
 
-
-function save_sucess(success_counter, bench, method)
-
-   sucess_rate = success_counter(:,1)*100 ./ success_counter(:,2);
-   
-   sucess_rate(isnan(sucess_rate)) = 100;
-
-   filename = strcat(bench,'_');
-   filename = strcat(filename,method);
-   filename = strcat(filename,datestr(fix(clock),'_yyyy-mm-dd_HH:MM:SS'));
-   filename = strcat(filename,'_success.pts');
-
-   save(filename,'sucess_rate','-ascii');
-   
-end
