@@ -1,4 +1,4 @@
-function [out, rate] = hs_jump(functname, Dim, noise, flag_jump, eta_percentage, display_process)
+function [out, rate] = hs_jump(functname, Dim, noise, method, flag_jump, eta_percentage, display_process)
    
    rand('twister',sum(100*clock));
 
@@ -7,6 +7,8 @@ function [out, rate] = hs_jump(functname, Dim, noise, flag_jump, eta_percentage,
 %   - Dim (int): dimension number
 
 %   - noise (real): noise level to corrupt the function landscape
+
+%   - method (string): nome do metodo a ser utilizado. Atualmente apenas HS
 
 %   - flag_jump (string):
 %         'yes': to use the jump strategy
@@ -90,41 +92,32 @@ function [out, rate] = hs_jump(functname, Dim, noise, flag_jump, eta_percentage,
     global BestIndex WorstIndex BestFit WorstFit BestGen currentIteration;
 
     MaxItr=1500;     % maximum number of iterations
-%    NVAR=D;         %number of variables
-%    NG=6;           %number of ineguality constraints
-%    NH=0;           %number of eguality constraints
-    HMS=6;           % harmony memory size
-    HMCR=0.9;        % harmony consideration rate  0< HMCR <1
+    HMS=20;          % harmony memory size
+
+	% ??????
+	% NG=6;           %number of ineguality constraints
+    % NH=0;           %number of eguality constraints
+
+    % Parameters
+    HMCR=0.9;        % harmony memory consideration rate  0< HMCR <1
     PARmin=0.4;      % minumum pitch adjusting rate
     PARmax=0.9;      % maximum pitch adjusting rate
     bwmin=0.0001;    % minumum bandwidth
     bwmax=1.0;       % maxiumum bandwidth
 
-%    PVB=[1.0 4;0.6 2;40 80;20 60];   % range of variables
-
     % /**** Initiate Matrix ****/
-    HM=zeros(HMS,Dim);
-    NCHV=zeros(1,Dim);         % New Candidate Harmony Vector??
-    BestGen=zeros(1,Dim);
-    fitness_m=zeros(1,HMS);
-    BW=zeros(1,Dim);
-    gx=zeros(1,NG);
+    HM 			= zeros(HMS, Dim);
+    NCHV 		= zeros(1, Dim);         % New Candidate Harmony Vector??
+    BestGen		= zeros(1, Dim);
+    fitness_m 	= zeros(1, HMS);
+    BW 			= zeros(1, Dim);
+    gx 			= zeros(1, NG);
     % warning off MATLAB:m_warning_end_without_block
-   
-
-    %MainHarmony
-    %initialize
-
-
-   %------------------------------------------------------------------------------------------------------------------- 
-   % initialize population of particles and their velocities at time zero
-   %pos = zeros(ps,D);
-   HM = zeros(HMS, Dim);
-
-    % randomly initialize the HM   
+ 
+    % randomly initialize the HM
+    HM = zeros(HMS, Dim);
     for d=1:Dim
       HM(1:HMS,d) = unifrnd(VRmin(d)*ones(HMS,1), VRmax(d)*ones(HMS,1));
-      %vel(1:ps,d) = unifrnd(-mv*ones(ps,1), mv*ones(ps,1)); % no need
     end
 
     for i=1:HMS
@@ -141,10 +134,7 @@ function [out, rate] = hs_jump(functname, Dim, noise, flag_jump, eta_percentage,
 %    end
 %    %END - initialize
 
-
-
     currentIteration  = 0;
-
     while(StopCondition(currentIteration))
 
         PAR=(PARmax-PARmin)/(MaxItr)*currentIteration+PARmin;
@@ -164,13 +154,13 @@ function [out, rate] = hs_jump(functname, Dim, noise, flag_jump, eta_percentage,
                     pvbRan1 = rand(1);
                     result = NCHV(i);
                     if( pvbRan1 < 0.5)
-                        result =result+  rand(1) * BW(i);
-                        if( result < PVB(i,2))
+                        result = result +  rand(1) * BW(i);
+                        if( result < VRmax(i,1))
                             NCHV(i) = result;
                         end
                     else
-                        result =result- rand(1) * BW(i);
-                        if( result > PVB(i,1))
+                        result =result - rand(1) * BW(i);
+                        if( result > VRmin(i,1))
                             NCHV(i) = result;
                         end
                     end
@@ -231,8 +221,7 @@ function [out, rate] = hs_jump(functname, Dim, noise, flag_jump, eta_percentage,
                 HM(WorstIndex,:)=NCHV;
                 fitness_m(WorstIndex)=NewFit;
             end
-            
-            
+
             WorstFit=fitness_m(1);
             WorstIndex =1;
             for i = 1:HMS
@@ -270,4 +259,3 @@ function f = fitness(functname, pos, noise)
    f = feval(functname, pos);
    f = f + noise*randn;
 end
-

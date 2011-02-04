@@ -3,7 +3,7 @@ function gera_tabelas(filename, benchmark)
    
    dimensions = 30;
    trials = 30;
-   max_noise = 0.0;
+   max_noise = 1.0;
 
    fid = fopen(filename,'wb');
    
@@ -16,13 +16,14 @@ function gera_tabelas(filename, benchmark)
    fprintf(fid,'\n');
 
    if strcmp(benchmark,'all')
-      tabela_stats(fid,'schwefel',   dimensions, max_noise, trials);
-      tabela_stats(fid,'rastrigin',  dimensions, max_noise, trials);
-      tabela_stats(fid,'ackley',     dimensions, max_noise, trials);
-      tabela_stats(fid,'griewank',   dimensions, max_noise, trials);
-      tabela_stats(fid,'schaffer',   dimensions, max_noise, trials);
-      tabela_stats(fid,'rosenbrock', dimensions, max_noise, trials);
       tabela_stats(fid,'sphere',     dimensions, max_noise, trials);
+      tabela_stats(fid,'schaffer',   dimensions, max_noise, trials);
+      tabela_stats(fid,'ackley',     dimensions, max_noise, trials);
+      tabela_stats(fid,'rosenbrock', dimensions, max_noise, trials);
+      tabela_stats(fid,'rastrigin',  dimensions, max_noise, trials);
+      tabela_stats(fid,'griewank',   dimensions, max_noise, trials);
+      % falta a "generalized penalized function"
+      tabela_stats(fid,'schwefel',   dimensions, max_noise, trials);
    else
       tabela_stats(fid, benchmark, dimensions, max_noise, trials);
    end
