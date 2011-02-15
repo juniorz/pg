@@ -1,3 +1,6 @@
+% Esse que estou usando Ž o Improved Harmony Search
+% M. Mahdavi, M. Fesanghary, E. Damangir, An improved harmony search
+% algorithm for solving optimization problems, Applied Mathematics and Computation 188 (2007) (2007) 1567–1579.
 function [out, rate] = hs_jump(functname, Dim, noise, method, flag_jump, eta_percentage, display_process)
    
    rand('twister',sum(100*clock));
@@ -85,6 +88,9 @@ function [out, rate] = hs_jump(functname, Dim, noise, method, flag_jump, eta_per
         cj=rand;
     end
 
+    message = sprintf('HS: %%g/%%g iterations, GBest = %%g\n');
+    local_search_count = 5; % numero maximo de falhas antes de chavear para salto
+    
     % Variaveis para o HS
     %global NVAR
     global NG NH MaxItr HMS HMCR PARmin PARmax bwmin bwmax;
@@ -92,18 +98,18 @@ function [out, rate] = hs_jump(functname, Dim, noise, method, flag_jump, eta_per
     global BestIndex WorstIndex BestFit WorstFit BestGen currentIteration;
 
     MaxItr=1500;     % maximum number of iterations
-    HMS=20;          % harmony memory size
-
+    HMS=5;          % harmony memory size
+   
 	% ??????
 	% NG=6;           %number of ineguality constraints
     % NH=0;           %number of eguality constraints
 
     % Parameters
-    HMCR=0.9;        % harmony memory consideration rate  0< HMCR <1
-    PARmin=0.4;      % minumum pitch adjusting rate
-    PARmax=0.9;      % maximum pitch adjusting rate
-    bwmin=0.0001;    % minumum bandwidth
-    bwmax=1.0;       % maxiumum bandwidth
+    HMCR    = 0.9;       % harmony memory consideration rate  0< HMCR <1
+    PARmin  = 0.01;      % minumum pitch adjusting rate
+    PARmax  = 0.99;      % maximum pitch adjusting rate
+    bwmin   = 0.0001;    % minumum bandwidth
+    bwmax   = 1 / (20 * (superior - inferior)); % maxiumum bandwidth
 
     % /**** Initiate Matrix ****/
     HM 			= zeros(HMS, Dim);
@@ -113,7 +119,11 @@ function [out, rate] = hs_jump(functname, Dim, noise, method, flag_jump, eta_per
     BW 			= zeros(1, Dim);
     gx 			= zeros(1, NG);
     % warning off MATLAB:m_warning_end_without_block
- 
+
+    pulou = 0;                          % flag para controle de salto: sim(1) ou nao(0).   
+    fail_count = 0;         % contador de falhas
+    success_counter = zeros(MaxItr, 2); % contador: jumps com sucesso por iteracao
+    
     % randomly initialize the HM
     HM = zeros(HMS, Dim);
     for d=1:Dim
@@ -125,6 +135,12 @@ function [out, rate] = hs_jump(functname, Dim, noise, method, flag_jump, eta_per
       fitness_m(i) = fitness(functname, HM(i,1:Dim), noise);
     end
 
+    % O que é pbest?
+    % Pra mim pos = HM, entao pbest = HM no inicio.. E depois?
+    % pbest = pos;
+    [gbestval, idx] = min(fitness_m);
+    gbest = HM(idx,:);  % this is gbest position
+    
 %    for i=1:HMS
 %        for j=1:Dim
 %            HM(i,j)=randval(PVB(j,1),PVB(j,2));
@@ -143,50 +159,131 @@ function [out, rate] = hs_jump(functname, Dim, noise, method, flag_jump, eta_per
             BW(pp)=bwmax*exp(coef*currentIteration);
         end
         
+        pulou=0;
+        
         % improvise a new harmony vector
-        for i =1:Dim
-            ran = rand(1);
-            if( ran < HMCR ) % memory consideration
-                index = randint(1, HMS);
-                NCHV(i) = HM(index,i);
-                pvbRan = rand(1);
-                if( pvbRan < PAR) % pitch adjusting
-                    pvbRan1 = rand(1);
-                    result = NCHV(i);
-                    if( pvbRan1 < 0.5)
-                        result = result +  rand(1) * BW(i);
-                        if( result < VRmax(i,1))
-                            NCHV(i) = result;
-                        end
-                    else
-                        result =result - rand(1) * BW(i);
-                        if( result > VRmin(i,1))
-                            NCHV(i) = result;
+        for i = 1:Dim
+            
+            % Default IHS
+            if strcmp(flag_jump, 'no') || (fail_count <= local_search_count)
+            
+                ran = rand(1);
+                if( ran < HMCR ) % memory consideration
+
+                    index = randint(1, HMS); %get random memory vector
+                    NCHV(i) = HM(index, i);
+
+                    pvbRan = rand(1);
+                    if( pvbRan < PAR) % pitch adjusting
+                        
+                        pvbRan1 = rand(1);
+                        result = NCHV(i);
+                        
+                        if( pvbRan1 < 0.5)
+                            result = result +  rand(1) * BW(i);
+
+                            %if( result < VRmax(i,1))
+                            if( result < superior)
+                                NCHV(i) = result;
+                            end
+                        else
+                            result = result - rand(1) * BW(i);
+                            
+                            %if( result > VRmin(i,1))
+                            if( result > inferior)
+                                NCHV(i) = result;
+                            end
                         end
                     end
+                else
+    %               NCHV(i) = randval( PVB(i,1), PVB(i,2) ); % random selection
+                    NCHV(i) = randval( inferior, superior ); % random selection
                 end
+                
+            % IHS + Chaotic-Jump
+            % Avaliar! Ele faz o salto em relação as particulas. Eu estou
+            % fazendo em relação ao melhor global. Ele dá um salto em uma
+            % partícula. Eu terei que dar um salto em uma componente. Ele
+            % usa a falha por partícula. EU terei que usar falhas globais.
+            % OU eu posso substituir o que ele faz por partícula, fazer por
+            % coordenada, mas não deve funcionar muito bem.
             else
-%               NCHV(i) = randval( PVB(i,1), PVB(i,2) ); % random selection
-                NCHV(i) = randval( VRmin(i,1), VRmax(i,1) ); % random selection
+                pulou = 1;
+
+                cj = 4*cj*(1-cj);
+                %pos(j,dimcnt) = pbest(j,dimcnt)*(1 + eta*(2*cj-1));
+                
+                % O valor naquela dimensão é obtido pelo valor naquela
+                % dimensão para a melhor solução até o momento MAIS um
+                % salto
+                NCHV(i) = gbest(i) * (1 + eta*(2*cj-1));
+                
+                %pbest(j,dimcnt)*(1 + eta*(2*cj-1));
+                
+                % Verifica se o valor gerado está dentro dos limites da
+                % função
+                if NCHV(i) > superior
+                   NCHV(i) = gbest(i);
+                end
+                if NCHV(i) < inferior
+                   NCHV(i) = gbest(i);
+                end
+                
             end
         end
+        
         %newFitness = Fitness(NCHV);
         newFitness = fitness(functname, NCHV, noise);
         UpdateHM( newFitness );
+
+        
+        % Avaliar!
+        %----------------------------
+         % contador: total jumps
+         if pulou==1
+            success_counter(currentIteration+1, 2) = success_counter(currentIteration+1, 2) + 1;
+         end
+
+         % contador: reseta contador de falha apos um salto.
+         if pulou == 1
+            fail_count = 0;
+         end
+
+         % atualizar pbest se necessario
+         if gbestval > newFitness
+               gbestval = newFitness;
+               gbest = NCHV;
+
+               % contador: successfull jump
+               if pulou==1
+                  success_counter(currentIteration+1, 1) = success_counter(currentIteration+1, 1) + 1;
+               end
+         else
+               % contador: usado para decidir quando saltar
+               fail_count = fail_count + 1;
+         end
+         
+
+        % mostrar mensangem de acompanhamento do processo
+        if display_process > 0
+            fprintf(message, currentIteration, MaxItr, gbestval);
+        end
+
+        % cumulative sucess sum
+        success_counter(currentIteration+2,:) = success_counter(currentIteration+1,:);
+         
+         %---------------------------
 
         currentIteration = currentIteration+1;
     end
     BestFitness = min(fitness_m);
    %END - MainHarmony
-
-   % Teria que adicionar os JUMPs no perform_HS
-
+   
    % function output
    out = BestFitness;
 
    % taxa de sucesso com jump.
-   %rate = success_counter(end,1)*100/success_counter(end,2);
-   rate = 1;
+   rate = success_counter(end,1)*100/success_counter(end,2);
 
 % /*********************************************/
 
