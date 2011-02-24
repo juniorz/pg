@@ -291,14 +291,12 @@ function [out, rate] = hs_jump(functname, method, Dim, max_iterations, noise, fl
         if (NewFit< WorstFit)
             
             if( NewFit < BestFit )
-                %Deu um erro aqui e eu nao sei porque
-                %Subscripted assignment dimension mismatch.
-                HM(WorstIndex,:) = NCHV;
+                HM(WorstIndex,:)=NCHV;
                 BestGen=NCHV;
                 fitness_m(WorstIndex)=NewFit;
                 BestIndex=WorstIndex;
             else
-                HM(WorstIndex,:) = NCHV;
+                HM(WorstIndex,:)=NCHV;
                 fitness_m(WorstIndex)=NewFit;
             end
 

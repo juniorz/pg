@@ -1,5 +1,5 @@
 % Gera uma tabela
-function tabela_stats(fid, bench, D, max_noise, verbose, trials)
+function tabela_stats(fid, bench, D, max_noise, trials, max_iteractions, verbose)
 
   % Coloquei fixo
   list_methods = { 'HS' };
@@ -17,9 +17,9 @@ function tabela_stats(fid, bench, D, max_noise, verbose, trials)
       fprintf(fid,name);
 
       for noise=0:0.2:max_noise
-         [media,desvio,success] = calcula_stats(bench, D, noise, method, 'no', eta_p, verbose, trials);
+         [media,desvio,success] = calcula_stats(bench, method, D, max_iteractions, noise, 'no', eta_p, trials, verbose);
 
-         fprintf(fid,';%g (%g)',media,desvio);
+         fprintf(fid,';%g;%g',media,desvio);
       end
       
       fprintf(fid,'\n');
@@ -34,9 +34,9 @@ function tabela_stats(fid, bench, D, max_noise, verbose, trials)
      fprintf(fid,name);
 
      for noise=0:0.2:max_noise
-        [media,desvio,success] = calcula_stats(bench, D, noise, method, 'yes', eta_p, verbose, trials);
+        [media,desvio,success] = calcula_stats(bench, method, D, max_iteractions, noise, 'yes', eta_p, trials, verbose);
 
-        fprintf(fid,';%g (%g)',media,desvio);
+        fprintf(fid,';%g;%g',media,desvio);
      end  
 
      fprintf(fid,'\n');
